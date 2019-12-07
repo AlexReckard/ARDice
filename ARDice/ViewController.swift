@@ -53,16 +53,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
 
-        // Create a new scene
-        let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
-        
-        // recursively will search through the tree to find the correct identity
-        if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
-        
-            diceNode.position = SCNVector3(x: 0, y: 0, z: -0.1 )
-        
-            sceneView.scene.rootNode.addChildNode(diceNode)
-        };
     };
     
     override func viewWillAppear(_ animated: Bool) {
@@ -93,8 +83,39 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         super.viewWillDisappear(animated)
         
         sceneView.session.pause()
-    }
+    };
     
+    // touch detection and placing 3D model using touch
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let touch = touches.first {
+            let touchLocation = touch.location(in: sceneView)
+            
+            let results = sceneView.hitTest(touchLocation, types: .existingPlaneUsingExtent)
+            
+            if let hitResults = results.first {
+                print(hitResults)
+
+                // Create a new scene
+                let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
+
+                // recursively will search through the tree to find the correct identity
+                if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
+                    
+                    // simd_float4x4 scale, rotation, position and matrix 4x4 with x,y,z,w
+                    diceNode.position = SCNVector3(
+                        x: hitResults.worldTransform.columns.3.x,
+                        // raises the object above the grid correctly
+                        y: hitResults.worldTransform.columns.3.y + diceNode.boundingSphere.radius,
+                        z: hitResults.worldTransform.columns.3.z
+                    );
+
+                    sceneView.scene.rootNode.addChildNode(diceNode)
+                };
+            };
+        };
+    };
+    
+    // horizontal plane
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         if anchor is ARPlaneAnchor {
             
@@ -122,6 +143,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
          
         } else {
             return
-        }
-    }
-}
+        };
+    };
+};
